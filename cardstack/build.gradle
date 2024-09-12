@@ -1,11 +1,11 @@
 apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
 
 group = 'com.daprlabs.aaron'
 version = '0.3.1-beta0'
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.2"
 
     defaultConfig {
         minSdkVersion 14
@@ -26,8 +26,35 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.2.0'
-    compile 'com.android.support:design:23.2.0'
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    testImplementation 'junit:junit:4.12'
+    implementation 'com.android.support:appcompat-v7:23.2.0'
+    implementation 'com.android.support:design:23.2.0'
+}
+
+publishing {
+    publications {
+        release(MavenPublication) {
+            groupId = project.group
+            artifactId project.name
+            version = project.version
+            
+            artifact("$buildDir/outputs/aar/${project.name}-release.aar") {
+                builtBy assembleRelease
+            }
+            
+            pom.withXml {
+                def dependenciesNode = asNode().appendNode('dependencies')
+
+                configurations.compile.allDependencies.each {
+                    if (it instanceof ExternalModuleDependency) {
+                        def dependencyNode = dependenciesNode.appendNode('dependency')
+                        dependencyNode.appendNode('groupId', it.group)
+                        dependencyNode.appendNode('artifactId', it.name)
+                        dependencyNode.appendNode('version', it.version)
+                    }
+                }
+            }
+        }
+    }
 }
